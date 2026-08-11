@@ -41,6 +41,17 @@ const aiInteractionsMock = {
   },
 };
 
+function getTextOutput(event: any): string | undefined {
+
+    if (event.event_type !== "step.delta") {
+        return;
+    }
+
+    if (event.delta.type === "text") {
+        return event.delta.text;
+    }
+}
+
 async function discuss(userInput: string) {
   if (!userInput) {
     return;
@@ -49,16 +60,28 @@ async function discuss(userInput: string) {
   addUserInput(userInput);
 
   try {
-    const result = await ai.interactions.create({
+    const resultStream = await ai.interactions.create({
       model: MODEL,
       input: conversation,
+      stream: true,
     });
 
-    console.log("Ai: ", result.output_text);
+    console.log("Ai: ");
 
-    addModelOutput(result.output_text);
+    let textResponse = '';
+
+    for await (const event of resultStream) {
+        const text = getTextOutput(event);
+        if (text) {
+            textResponse += text;
+            console.log(text);
+        }
+    }
+
+    addModelOutput(textResponse);
+
   } catch (err) {
-    console.log("Ups , an error appeared");
+    console.log("Ups , an error appeared", err);
   }
 }
 
