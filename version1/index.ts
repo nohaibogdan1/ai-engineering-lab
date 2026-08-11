@@ -42,14 +42,13 @@ const aiInteractionsMock = {
 };
 
 function getTextOutput(event: any): string | undefined {
+  if (event.event_type !== "step.delta") {
+    return;
+  }
 
-    if (event.event_type !== "step.delta") {
-        return;
-    }
-
-    if (event.delta.type === "text") {
-        return event.delta.text;
-    }
+  if (event.delta.type === "text") {
+    return event.delta.text;
+  }
 }
 
 async function discuss(userInput: string) {
@@ -68,24 +67,23 @@ async function discuss(userInput: string) {
 
     console.log("Ai: ");
 
-    let textResponse = '';
+    let textResponse = "";
 
     for await (const event of resultStream) {
-        const text = getTextOutput(event);
-        if (text) {
-            textResponse += text;
-            console.log(text);
-        }
+      const text = getTextOutput(event);
+      if (text) {
+        textResponse += text;
+        console.log(text);
+      }
     }
 
     addModelOutput(textResponse);
-
   } catch (err) {
     console.log("Ups , an error appeared", err);
   }
 }
 
-async function main() {
+function chat() {
   rl.on("line", async (line) => {
     if (line === EXIT) {
       rl.close();
@@ -95,6 +93,34 @@ async function main() {
   });
 
   console.log("User: ");
+}
+
+const outputSchema = {
+  name: "string",
+  age: "number",
+  occupation: "string",
+  city: "string",
+};
+
+async function llmStructuredOutput() {
+  const result = await ai.interactions.create({
+    model: MODEL,
+    input:
+      "John is old and works as a software engineer. He lives in Bucharest. He has two kids, a daughter and a son",
+    response_format: {
+      mime_type: "application/json",
+      type: "text",
+      schema: outputSchema,
+    },
+  });
+
+  console.log("result", result.output_text);
+}
+
+async function main() {
+  // chat();
+
+  llmStructuredOutput();
 
   return;
 }
