@@ -17,14 +17,12 @@ const ai = new GoogleGenAI({
 
 const conversation = [];
 
-
 function addUserInput(input: string) {
   conversation.push({
     type: "user_input" as const,
     content: [{ type: "text" as const, text: input }],
   });
 }
-
 
 function addModelOutput(output: string) {
   conversation.push({
@@ -33,35 +31,36 @@ function addModelOutput(output: string) {
   });
 }
 
-
 const aiInteractionsMock = {
-  create: async (args: any): Promise<{output_text: string}> => {
+  create: async (args: any): Promise<{ output_text: string }> => {
     return new Promise((accept) => {
       setTimeout(() => {
-        accept({output_text: "mocked answer"});
+        accept({ output_text: "mocked answer" });
       }, 1000);
     });
   },
 };
 
-
-
-
 async function discuss(userInput: string) {
+  if (!userInput) {
+    return;
+  }
+
   addUserInput(userInput);
 
-  const result = await ai.interactions.create({
-    model: MODEL,
-    input: conversation,
-  });
+  try {
+    const result = await ai.interactions.create({
+      model: MODEL,
+      input: conversation,
+    });
 
-  console.log("Ai: ", result.output_text);
+    console.log("Ai: ", result.output_text);
 
-  addModelOutput(result.output_text);
+    addModelOutput(result.output_text);
+  } catch (err) {
+    console.log("Ups , an error appeared");
+  }
 }
-
-
-
 
 async function main() {
   rl.on("line", async (line) => {
