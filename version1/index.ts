@@ -7,12 +7,12 @@ async function main() {
         apiKey: process.env.GEMINI_API_KEY
     })
 
-    const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: "what is an apple?"
+    const result = await ai.interactions.create({
+        model: "gemini-3.1-flash-lite",
+        input: "Explain in two sentences how AI works"
     })
 
-    console.log(result)
+    console.log(result.output_text)
 
 }
 
