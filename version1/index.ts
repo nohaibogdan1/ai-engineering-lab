@@ -1,51 +1,80 @@
+import { createInterface } from "node:readline";
+
 import { GoogleGenAI } from "@google/genai";
 
 const MODEL = "gemini-3.1-flash-lite";
 
-async function main() {
-    const question = process.argv[2];
+const EXIT = "exit";
 
-    if (!question) {
-        console.error("Please provide a question")
-        return;
-    }
+const rl = createInterface({
+  input: process.stdin,
+  output: process.stdout,
+});
 
-    const ai = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY
-    })
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY,
+});
 
-    const firstInput = "My name is Bogdan";
+const conversation = [];
 
-    const result = await ai.interactions.create({
-        model: MODEL,
-        input: firstInput
-    })
 
-    console.log(result.output_text, "\n\n")
-
-    const secondInput = "What is my name?";
-
-    const result2 = await ai.interactions.create({
-        model: MODEL,
-        input: secondInput
-    })
-
-    console.log(result2.output_text, "\n\n")
-
-    const conversation = [
-        {type: "user_input" as const, content: [{type: "text" as const, text: firstInput}]}, 
-        {type: "model_output" as const, content: [{type: "text" as const, text: result.output_text || ""}]}, 
-        {type: "user_input" as const, content: [{type: "text" as const, text: secondInput}]}
-    ];
-
-    const result3 = await ai.interactions.create({
-        model: MODEL,
-        input: conversation
-    })
-
-    console.log(result3.output_text, "\n\n")
+function addUserInput(input: string) {
+  conversation.push({
+    type: "user_input" as const,
+    content: [{ type: "text" as const, text: input }],
+  });
 }
 
-main()
+
+function addModelOutput(output: string) {
+  conversation.push({
+    type: "model_output" as const,
+    content: [{ type: "text" as const, text: output }],
+  });
+}
 
 
+const aiInteractionsMock = {
+  create: async (args: any): Promise<{output_text: string}> => {
+    return new Promise((accept) => {
+      setTimeout(() => {
+        accept({output_text: "mocked answer"});
+      }, 1000);
+    });
+  },
+};
+
+
+
+
+async function discuss(userInput: string) {
+  addUserInput(userInput);
+
+  const result = await ai.interactions.create({
+    model: MODEL,
+    input: conversation,
+  });
+
+  console.log("Ai: ", result.output_text);
+
+  addModelOutput(result.output_text);
+}
+
+
+
+
+async function main() {
+  rl.on("line", async (line) => {
+    if (line === EXIT) {
+      rl.close();
+    } else {
+      await discuss(line);
+    }
+  });
+
+  console.log("User: ");
+
+  return;
+}
+
+main();
